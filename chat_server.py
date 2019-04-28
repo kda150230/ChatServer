@@ -6,7 +6,7 @@ import message
 
 if len(sys.argv) != 3:
     print ("Correct usage: script, IP address, port number")
-    print("ex: python3 chat_server.py 127.0.0.1 8080")
+    print("ex: python3 chat_server.py 127.0.0.1 8080\n")
     exit()
 
 IP_address = str(sys.argv[1])
