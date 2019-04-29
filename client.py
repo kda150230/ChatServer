@@ -19,7 +19,6 @@ while(sys.stdin.readline() != "Log on\n"):
 	{
 	}
 
-
 # create a UDP connection for the intial handshake with server
 handshake = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP connection
 
@@ -47,9 +46,16 @@ while True:
     for socks in read_sockets:
         if socks == server:
             Message = socks.recv(2048)
-            print(Message.decode())
+            server_msg = Message.decode()
+            print("server_msg = " + server_msg)
+            if "CLIENTREQUESTID" == server_msg[:15]:
+                print("server_msg2 = " + server_msg)
+                j = server_msg[15:] # flag = int(message.decode()[15:])
+                print("J = " + j)
+                server.send(("CLIENTREQUESTID" + j).encode()) # Message.decode()[15:]
         else:
             Message = sys.stdin.readline()
+
             server.send(Message.encode())
             sys.stdout.write("<You> ")
             sys.stdout.write(Message)
