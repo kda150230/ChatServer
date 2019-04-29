@@ -14,6 +14,10 @@ IP_address = str(sys.argv[1])
 port = int(sys.argv[2])
 UDP_port = 8081 # UDP port fixed, but probably shouldn't be
 client_id = random.randrange(1000, 4001)
+#wait for the client to type "Log on" to be connected
+while(sys.stdin.readline() != "Log on\n"):
+	{
+	}
 
 # create a UDP connection for the intial handshake with server
 handshake = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP connection
@@ -41,12 +45,12 @@ while True:
     # receive and display messages, if any. Otherwise, read from stdin
     for socks in read_sockets:
         if socks == server:
-            message = socks.recv(2048)
-            print(message.decode())
+            Message = socks.recv(2048)
+            print(Message.decode())
         else:
-            message = sys.stdin.readline()
-            server.send(message.encode())
+            Message = sys.stdin.readline()
+            server.send(Message.encode())
             sys.stdout.write("<You> ")
-            sys.stdout.write(message)
+            sys.stdout.write(Message)
             sys.stdout.flush()
 server.close()
