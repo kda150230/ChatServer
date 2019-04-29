@@ -19,6 +19,7 @@ while(sys.stdin.readline() != "Log on\n"):
 	{
 	}
 
+
 # create a UDP connection for the intial handshake with server
 handshake = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP connection
 
