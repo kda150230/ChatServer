@@ -39,10 +39,14 @@ def clientthread(conn, addr):
         try:
             message = conn.recv(2048) # buffer size 2048 bytes
             if message:
-                print ("<" + addr[0] + "> " + message.decode())
-                message_to_send = "<" + addr[0] + "> " + message.decode()
-                # prints the message and address of the user who just sent the message on the server terminal
-                broadcast(message_to_send,conn)
+                #User should type in "End Chat" to close the connection
+                if message.decode() == "End Chat\n":
+                    end_rcvd()
+                else:
+                    print ("<" + addr[0] + "> " + message.decode())
+                    message_to_send = "<" + addr[0] + "> " + message.decode()
+                    # prints the message and address of the user who just sent the message on the server terminal
+                    broadcast(message_to_send,conn)
             else:
                 remove(conn)
         except:
@@ -73,7 +77,10 @@ def hello_rcvd():
     print (addr[0] + " connected")
     # creates and individual thread for every user that connects
     start_new_thread(clientthread,(conn,addr))
-
+    
+def end_rcvd():
+    print ("End Request Received") #should acutally close connection, not just say this
+    
 # listens for messages sent over UDP to handshake port. If we receive a HELLO,
 # begin process of authorizing and connecting client via TCP
 while True:
