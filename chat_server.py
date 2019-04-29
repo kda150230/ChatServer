@@ -27,10 +27,11 @@ server.bind((IP_address, port))
 # listens for 100 active connections. This number can be increased as per convenience
 server.listen(100)
 list_of_clients=[]
+clientIDs=[]
 
 print("Chat server started, listening for new connections")
 
-def clientthread(conn, addr):
+def clientthread(conn, addr, userID):
     # sends a message to the client whose user object is conn
     welcome_msg = "Welcome to the chatroom!"
     conn.send(welcome_msg.encode())
@@ -39,14 +40,16 @@ def clientthread(conn, addr):
         try:
             message = conn.recv(2048) # buffer size 2048 bytes
             if message:
+                if "Chat" in message.decode():
+                    chat_rcvd(message.decode()[5:-1], conn, userID)#send requested client and socket
                 #User should type in "End Chat" to close the connection
-                if message.decode() == "End Chat\n":
+                elif message.decode() == "End Chat\n":
                     end_rcvd()
                 else:
-                    print ("<" + addr[0] + "> " + message.decode())
-                    message_to_send = "<" + addr[0] + "> " + message.decode()
+                    print ("<" + userID + "> " + message.decode())
+                    message_to_send = "<" + userID + "> " + message.decode()
                     # prints the message and address of the user who just sent the message on the server terminal
-                    broadcast(message_to_send,conn)
+                    broadcast(message_to_send[:-1],conn)
             else:
                 remove(conn)
         except:
@@ -66,28 +69,42 @@ def remove(connection):
         list_of_clients.remove(connection)
 
 # if we recieve a HELLO msg from client, begin handshake process over UDP
-def hello_rcvd():
+def hello_rcvd(client_id):
     print("Hello recieved")
     # accepts a connection request and stores two parameters, conn which is a socket object for that user,
     # and addr which contains the IP address of the client that just connected
     conn, addr = server.accept()
     # maintains a list of clients for ease of broadcasting a message to all available people in the chatroom
     list_of_clients.append(conn)
+    clientIDs.append(client_id)
     # prints the address of the person who just connected
-    print (addr[0] + " connected")
+    print (client_id + " connected")
     # creates and individual thread for every user that connects
-    start_new_thread(clientthread,(conn,addr))
-    
+    start_new_thread(clientthread,(conn,addr, client_id))
+
 def end_rcvd():
     print ("End Request Received") #should acutally close connection, not just say this
-    
+
+def chat_rcvd(mess, connection, reqUser):#connection is socket of requesting user, reqUser is requesting user's id
+    print ("Chat Request Received")
+    print ("Chat Requested with " + mess)
+    for i in range(0, len(clientIDs)):
+        
+        if clientIDs[i] == mess:#mess is the requested chat ID of the user.
+            print("Client Found")
+            try:
+                list_of_clients[i].send(("CHAT_STARTED " + reqUser).encode())#send message to client
+                connection.send(("CHAT_STARTED " + mess).encode()) #let requested user know chat
+            except:
+                print ("Couldn't connect")
+
 # listens for messages sent over UDP to handshake port. If we receive a HELLO,
 # begin process of authorizing and connecting client via TCP
 while True:
     msg, addr = handshake.recvfrom(2048)
     msg_entries = message.unwind_msg(msg.decode())
     if msg_entries[0] == "HELLO":
-        hello_rcvd()
+        hello_rcvd(msg_entries[1])
 
 handshake.close()
 conn.close()
