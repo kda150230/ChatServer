@@ -28,6 +28,7 @@ server.bind((IP_address, port))
 server.listen(100)
 list_of_clients=[] # connection sockets
 clientIDs=[]
+clientFlags=[]
 
 print("Chat server started, listening for new connections")
 
@@ -36,6 +37,7 @@ def clientthread(conn, addr, userID):
     welcome_msg = "Welcome to the chatroom!"
     conn.send(welcome_msg.encode())
     flag = -1
+    clientFlags.append(0)
     while True:
         try:
             message = conn.recv(2048) # buffer size 2048 bytes
@@ -45,15 +47,20 @@ def clientthread(conn, addr, userID):
                 if "CLIENTREQUESTID" in message.decode(): #[0:14 are message, [15] is id (client A's i val)
                     print(message.decode()[15:])
                     flag = int(message.decode()[15])
+                    clientFlags[flag] = 1
                     #print("CLIENT B FLAG = " + flag) # does not print for some reason
                 elif "END_NOTIF" in message.decode():
                     print("Connected client ended chat")
+                    clientFlags[flag] = 0
                     flag = -1
                 #User should type in "End Chat" to close the connection
                 elif "End Chat" in message.decode():
                     print("Logging off...")
                     list_of_clients[int(flag)].send("END_NOTIF".encode())
+                    clientFlags[flag] = 0
                     flag = -1
+                    
+                    
                 # client A requests a chat with client B
                 elif "Chat" in message.decode():
                     flag = chat_rcvd(message.decode()[5:-1], conn, userID) #send requested client and socket
@@ -116,15 +123,19 @@ def chat_rcvd(mess, connection, reqUser): #connection is socket of requesting us
     for i in range(0, len(clientIDs)):
         if clientIDs[i] == mess: # mess is the requested chat ID of the user.
             print("Client Found")
-            try:
-                #list_of_clients[i].send(("CHAT_STARTED " + reqUser + "\n").encode())#send message to client
-                list_of_clients[i].send(("CLIENTREQUESTID" + requester_ival).encode())
-                connection.send(("CHAT_STARTED " + mess).encode()) #let requested user know chat
-                return i
-            except:
-                print ("Couldn't connect")
-                return -1
-            # once connected, loop so that we only chat with the other client in our session
+            if clientFlags[i] != 0:
+                connection.send(("UNREACHABLE").encode())
+            else:
+                try:
+                    clientFlags[i] = 1
+                    #list_of_clients[i].send(("CHAT_STARTED " + reqUser + "\n").encode())#send message to client
+                    list_of_clients[i].send(("CLIENTREQUESTID" + requester_ival).encode())
+                    connection.send(("CHAT_STARTED " + mess).encode()) #let requested user know chat
+                    return i
+                except:
+                    print ("Couldn't connect")
+                    return -1
+                # once connected, loop so that we only chat with the other client in our session
 
 
 
