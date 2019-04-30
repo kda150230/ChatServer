@@ -12,7 +12,7 @@ if len(sys.argv) != 3:
 
 IP_address = str(sys.argv[1])
 port = int(sys.argv[2])
-UDP_port = 8081 # UDP port fixed, but probably shouldn't be
+UDP_port = 8081 # UDP port fixed
 client_id = random.randrange(1000, 4001)
 #wait for the client to type "Log on" to be connected
 while(sys.stdin.readline() != "Log on\n"):
@@ -25,12 +25,6 @@ handshake = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP connection
 # send HELLO(clientID_A) message to server using UDP to begin connection
 msg = message.make_msg("HELLO", *[str(client_id)])
 handshake.sendto(msg.encode(), (IP_address, UDP_port))
-
-#
-#
-# other steps in initial connection protocol go here (RESPONSE, AUTH_FAIL, etc)
-#
-#
 
 handshake.close()
 
@@ -47,15 +41,17 @@ while True:
         if socks == server:
             Message = socks.recv(2048)
             server_msg = Message.decode()
-            print(server_msg)
             if "CLIENTREQUESTID" == server_msg[:15]:
-                #print("server_msg2 = " + server_msg)
+                print("CHAT_STARTED ")
                 j = server_msg[15:] # flag = int(message.decode()[15:])
-                print("J = " + j)
                 server.send(("CLIENTREQUESTID" + j).encode()) # Message.decode()[15:]
             elif "END_NOTIF" in server_msg:
-                print("-> " + server_msg)
                 server.send(("END_NOTIF".encode()))
+                print(server_msg)
+            elif "End Chat" in server_msg:
+                print(server_msg)
+            else:
+                print(server_msg)
         else:
             Message = sys.stdin.readline()
 
