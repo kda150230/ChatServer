@@ -47,12 +47,15 @@ while True:
         if socks == server:
             Message = socks.recv(2048)
             server_msg = Message.decode()
-            print("server_msg = " + server_msg)
+            print(server_msg)
             if "CLIENTREQUESTID" == server_msg[:15]:
-                print("server_msg2 = " + server_msg)
+                #print("server_msg2 = " + server_msg)
                 j = server_msg[15:] # flag = int(message.decode()[15:])
                 print("J = " + j)
                 server.send(("CLIENTREQUESTID" + j).encode()) # Message.decode()[15:]
+            elif "END_NOTIF" in server_msg:
+                print("-> " + server_msg)
+                server.send(("END_NOTIF".encode()))
         else:
             Message = sys.stdin.readline()
 
