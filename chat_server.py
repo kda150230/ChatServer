@@ -3,6 +3,7 @@ import select
 from _thread import *
 import sys
 import message
+import time
 
 if len(sys.argv) != 3:
     print ("Correct usage: script, IP address, port number")
@@ -22,15 +23,24 @@ handshake.bind((IP_address, UDP_port))
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-# binds the server to an entered IP address and at the specified port number. Client must be aware of these parameters
 server.bind((IP_address, port))
-# listens for 100 active connections. This number can be increased as per convenience
+# listens for x active connections
 server.listen(100)
 list_of_clients=[] # connection sockets
-clientIDs=[]
-clientFlags=[]
+clientIDs=[] #random client IDs
+clientFlags=[]#0 if client is free, 1 if not free
+
+"""def stopwatch():
+    start = time.time()
+    seconds = 20
+    elapsed = 0
+    while elapsed < seconds:
+        elapsed = time.time() - start
+    print("TIMER ENDED")
+"""
 
 print("Chat server started, listening for new connections")
+
 
 def clientthread(conn, addr, userID):
     # sends a message to the client whose user object is conn
@@ -43,19 +53,16 @@ def clientthread(conn, addr, userID):
             message = conn.recv(2048) # buffer size 2048 bytes
             if message:
 
-                print("Msg = " + message.decode())
                 if "CLIENTREQUESTID" in message.decode(): #[0:14 are message, [15] is id (client A's i val)
-                    print(message.decode()[15:])
                     flag = int(message.decode()[15])
                     clientFlags[flag] = 1
                     #print("CLIENT B FLAG = " + flag) # does not print for some reason
                 elif "END_NOTIF" in message.decode():
-                    print("Connected client ended chat")
                     clientFlags[flag] = 0
                     flag = -1
                 #User should type in "End Chat" to close the connection
                 elif "End Chat" in message.decode():
-                    print("Logging off...")
+                    conn.send("END_NOTIF".encode())
                     list_of_clients[int(flag)].send("END_NOTIF".encode())
                     clientFlags[flag] = 0
                     flag = -1
@@ -106,12 +113,10 @@ def hello_rcvd(client_id):
     # creates and individual thread for every user that connects
     start_new_thread(clientthread,(conn, addr, client_id))
 
-def end_rcvd(conn):
-    print ("End Request Received") #should acutally close connection, not just say this
+def end_rcvd(conn):#end connection
     remove(conn)
 
 def chat_rcvd(mess, connection, reqUser): #connection is socket of requesting user, reqUser is requesting user's id
-    print ("Chat Request Received")
     print ("Chat Requested with " + mess)
 
     # determine client ID of the requesting client to send to client B
@@ -122,20 +127,19 @@ def chat_rcvd(mess, connection, reqUser): #connection is socket of requesting us
     # loop through clients until we find the client ID we wish to connect to
     for i in range(0, len(clientIDs)):
         if clientIDs[i] == mess: # mess is the requested chat ID of the user.
-            print("Client Found")
             if clientFlags[i] != 0:
                 connection.send(("UNREACHABLE").encode())
             else:
                 try:
                     clientFlags[i] = 1
-                    #list_of_clients[i].send(("CHAT_STARTED " + reqUser + "\n").encode())#send message to client
                     list_of_clients[i].send(("CLIENTREQUESTID" + requester_ival).encode())
-                    connection.send(("CHAT_STARTED " + mess).encode()) #let requested user know chat
+                    connection.send(("CHAT_STARTED " + mess).encode()) #let requesting user know chat started
                     return i
                 except:
-                    print ("Couldn't connect")
+                    print ("Couldn't connect")#should never happen
                     return -1
                 # once connected, loop so that we only chat with the other client in our session
+
 
 
 
