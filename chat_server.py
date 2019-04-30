@@ -1,6 +1,6 @@
 import socket
 import select
-from thread import *
+from _thread import *
 import sys
 import message
 
@@ -45,7 +45,7 @@ def clientthread(conn, addr, userID):
                 if "CLIENTREQUESTID" in message.decode(): #[0:14 are message, [15] is id (client A's i val)
                     print(message.decode()[15:])
                     flag = int(message.decode()[15])
-                    print("CLIENT B FLAG = " + flag) # does not print for some reason
+                    #print("CLIENT B FLAG = " + flag) # does not print for some reason
                 elif "END_NOTIF" in message.decode():
                     print("Connected client ended chat")
                     flag = -1
@@ -63,8 +63,9 @@ def clientthread(conn, addr, userID):
                     # prints the message and address of the user who just sent the message on the server terminal
                     # broadcast(message_to_send[:-1],conn)
                     if flag != -1:
-                        list_of_clients[int(flag)].send(("<" + userID + "> " + message).encode())
-                        conn.send(message.encode())
+                        print(flag)
+                        list_of_clients[int(flag)].send(("<" + userID + "> " + message.decode()).encode())
+                        #conn.send(message.encode())
             else:
                 remove(conn)
         except:
