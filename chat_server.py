@@ -42,25 +42,28 @@ def clientthread(conn, addr, userID):
             if message:
 
                 print("Msg = " + message.decode())
-                if "CLIENTREQUESTID" in message.decode(): #[0:16 are message, [17] is id (client A's i val)
+                if "CLIENTREQUESTID" in message.decode(): #[0:14 are message, [15] is id (client A's i val)
                     print(message.decode()[15:])
-                    print("got here")
-                    flag = int(message.decode()[15:])
-                    print("CLIENT B FLAG = " + flag)
-
-                # client A requests a chat with client B
-                if "Chat" in message.decode():
-                    flag = chat_rcvd(message.decode()[5:-1], conn, userID) #send requested client and socket
+                    flag = int(message.decode()[15])
+                    print("CLIENT B FLAG = " + flag) # does not print for some reason
+                elif "END_NOTIF" in message.decode():
+                    print("Connected client ended chat")
+                    flag = -1
                 #User should type in "End Chat" to close the connection
-                elif message.decode() == "Log off\n":
-                    end_rcvd()
+                elif "End Chat" in message.decode():
+                    print("Logging off...")
+                    list_of_clients[int(flag)].send("END_NOTIF".encode())
+                    flag = -1
+                # client A requests a chat with client B
+                elif "Chat" in message.decode():
+                    flag = chat_rcvd(message.decode()[5:-1], conn, userID) #send requested client and socket
                 else:
                     print ("<" + userID + "> " + message.decode())
                     message_to_send = "<" + userID + "> " + message.decode()
                     # prints the message and address of the user who just sent the message on the server terminal
-                    #broadcast(message_to_send[:-1],conn)
+                    # broadcast(message_to_send[:-1],conn)
                     if flag != -1:
-                        list_of_clients[flag].send("<" + userID + "> " + message.encode())
+                        list_of_clients[int(flag)].send(("<" + userID + "> " + message).encode())
                         conn.send(message.encode())
             else:
                 remove(conn)
@@ -77,8 +80,9 @@ def broadcast(message,connection):
                 remove(clients)
 
 def remove(connection):
-    if connection in list_of_clients:
-        list_of_clients.remove(connection)
+    for i in range(0, len(clientIDs)):
+        if list_of_clients[i] == connection:
+            list_of_clients[i].close()
 
 # if we recieve a HELLO msg from client, begin handshake process over UDP
 def hello_rcvd(client_id):
@@ -94,8 +98,9 @@ def hello_rcvd(client_id):
     # creates and individual thread for every user that connects
     start_new_thread(clientthread,(conn, addr, client_id))
 
-def end_rcvd():
+def end_rcvd(conn):
     print ("End Request Received") #should acutally close connection, not just say this
+    remove(conn)
 
 def chat_rcvd(mess, connection, reqUser): #connection is socket of requesting user, reqUser is requesting user's id
     print ("Chat Request Received")
@@ -113,7 +118,7 @@ def chat_rcvd(mess, connection, reqUser): #connection is socket of requesting us
             try:
                 #list_of_clients[i].send(("CHAT_STARTED " + reqUser + "\n").encode())#send message to client
                 list_of_clients[i].send(("CLIENTREQUESTID" + requester_ival).encode())
-                #connection.send(("CHAT_STARTED " + mess).encode()) #let requested user know chat
+                connection.send(("CHAT_STARTED " + mess).encode()) #let requested user know chat
                 return i
             except:
                 print ("Couldn't connect")
