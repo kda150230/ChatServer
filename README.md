@@ -1,5 +1,7 @@
 # ChatServer
 CS4391 Final Project
+ 
+## todo: rewrite all this
 
 To successfully compile and run this project, it must be done on a UNIX system
 First launch the server Script as follows: "python3 chat_server.py 127.0.0.1 8081"
